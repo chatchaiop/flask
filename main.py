@@ -3,6 +3,7 @@ import numpy as np
 from flask import Flask, request, jsonify
 import requests
 import io
+import uuid  # Import the uuid module for generating a random filename
 
 app = Flask(__name__)
 
@@ -12,11 +13,11 @@ def process_images(a1_url, a2_url, a3_url):
         a1_response = requests.get(a1_url)
         a1_content = io.BytesIO(a1_response.content)
         a1_image = cv2.imdecode(np.frombuffer(a1_content.read(), np.uint8), cv2.IMREAD_GRAYSCALE)
-        
+
         a2_response = requests.get(a2_url)
         a2_content = io.BytesIO(a2_response.content)
         a2_image = cv2.imdecode(np.frombuffer(a2_content.read(), np.uint8), cv2.IMREAD_UNCHANGED)
-        
+
         a3_response = requests.get(a3_url)
         a3_content = io.BytesIO(a3_response.content)
         a3_image = cv2.imdecode(np.frombuffer(a3_content.read(), np.uint8), cv2.IMREAD_UNCHANGED)
@@ -39,11 +40,13 @@ def process_images(a1_url, a2_url, a3_url):
         result_image = cv2.bitwise_and(a3_image, a3_image, mask=mask_inv)
         result_image = cv2.bitwise_or(result_image, new_image)
 
-        # Save the result image
-        result_url = 'result.png'
-        cv2.imwrite(result_url, result_image)
+        # Generate a random filename for the result image
+        result_filename = str(uuid.uuid4()) + '.png'
 
-        return result_url
+        # Save the result image with the random filename
+        cv2.imwrite(result_filename, result_image)
+
+        return result_filename  # Return the random filename
 
     except Exception as e:
         return str(e)
@@ -54,9 +57,9 @@ def api_process_images():
     a2_url = request.args.get('a2')
     a3_url = request.args.get('a3')
 
-    result_url = process_images(a1_url, a2_url, a3_url)
+    result_filename = process_images(a1_url, a2_url, a3_url)
 
-    return jsonify({"result_url": result_url})
+    return jsonify({"result_filename": result_filename})  # Return the random filename
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8081)
+    app.run(host='0.0.0.0')
